@@ -917,9 +917,17 @@ public class GLTFUnarchiver {
         property.maxAnisotropy = texture.maxAnisotropy
         property.contentsTransform = texture.contentsTransform
         property.mappingChannel = texture.mappingChannel
+        
+#if TARGET_OS_MAC
         if #available(OSX 10.13, *) {
             property.textureComponents = texture.textureComponents
         }
+#else
+        if #available(iOS 11.0, *) {
+            property.textureComponents = texture.textureComponents
+        }
+#endif
+        
     }
     
     var defaultMaterial: SCNMaterial {
@@ -988,10 +996,11 @@ public class GLTFUnarchiver {
                 try self.setTexture(index: metallicTexture.index, to: material.roughness)
                 material.roughness.mappingChannel = metallicTexture.texCoord
                 
+#if TARGET_OS_MAC
                 if #available(OSX 10.13, *) {
                     material.metalness.textureComponents = .blue
                     material.roughness.textureComponents = .green
-                } else {
+                }else {
                     // Fallback on earlier versions
                     if let image = material.metalness.contents as? Image {
                         let (metalness, roughness) = try getMetallicRoughnessTexture(from: image)
@@ -999,6 +1008,21 @@ public class GLTFUnarchiver {
                         material.roughness.contents = roughness
                     }
                 }
+#else
+                if #available(iOS 11.0, *) {
+                    material.metalness.textureComponents = .blue
+                    material.roughness.textureComponents = .green
+                }else {
+                    // Fallback on earlier versions
+                    if let image = material.metalness.contents as? Image {
+                        let (metalness, roughness) = try getMetallicRoughnessTexture(from: image)
+                        material.metalness.contents = metalness
+                        material.roughness.contents = roughness
+                    }
+                }
+#endif
+                
+                
                 
                 let metallicFactor = pbr.metallicFactor
                 material.setValue(metallicFactor, forKey: "metallicFactor")
